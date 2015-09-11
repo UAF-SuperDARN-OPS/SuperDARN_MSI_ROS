@@ -1,6 +1,5 @@
 /* site.tst.h
    ==========
-   Author: R.J.Barnes
 */
 
 

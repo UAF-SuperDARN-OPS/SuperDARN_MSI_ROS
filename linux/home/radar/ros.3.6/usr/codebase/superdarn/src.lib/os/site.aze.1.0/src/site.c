@@ -40,6 +40,7 @@
 int AZE_exit_flag=0;
 char channame[5]="\0";
 
+
 FILE *seqlog=NULL;
 char seqlog_name[256];
 char *seqlog_dir=NULL;
