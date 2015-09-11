@@ -34,6 +34,9 @@
 #define REAL_BUF_OFFSET 0
 #define IMAG_BUF_OFFSET 1
 #define USEC 1000000.0
+
+/* TODO: PUT STATIC OFFSET INTO DMAP TO ACCOUNT FOR OFFSET BETWEEN DDS AND RX */ 
+
 int AZW_exit_flag=0;
 char channame[5]="\0";
 char server[256]="127.0.0.1";
@@ -52,6 +55,7 @@ char *msglog_dir=NULL;
 FILE *f_diagnostic_ascii=NULL;
 
 int yday=-1;
+int iqbufsize=0;
 
 void SiteAzwExit(int signum) {
 
@@ -88,7 +92,7 @@ void SiteAzwExit(int signum) {
           f_diagnostic_ascii=NULL;
         }
         if (samples !=NULL)
-          ShMemFree((unsigned char *) samples,sharedmemory,IQBUFSIZE,1,shmemfd);
+          ShMemFree((unsigned char *) samples,sharedmemory,iqbufsize,1,shmemfd);
         exit(errno);
       } 
       break;
@@ -120,7 +124,7 @@ void SiteAzwExit(int signum) {
           f_diagnostic_ascii=NULL;
         }
         if (samples !=NULL)
-          ShMemFree((unsigned char *) samples,sharedmemory,IQBUFSIZE,1,shmemfd);
+          ShMemFree((unsigned char *) samples,sharedmemory,iqbufsize,1,shmemfd);
         exit(errno);
       }
 
@@ -140,7 +144,6 @@ int SiteAzwStart(char *host) {
     seqbadtr[nave].start=NULL;
     seqbadtr[nave].length=NULL;
   }
-  debug=0;
   nave=0;
   rdata.main=NULL;
   rdata.back=NULL;
@@ -171,7 +174,6 @@ int SiteAzwStart(char *host) {
  *   invert=non-zero  Inversion necassary 
 */
   invert=1;
-  debug=0;
 /* rxchn number of channels typically 1*/
 /* rngoff argument in ACFCalculate.. is 2*rxchn and is normally set to 2 */
   rxchn=1;
@@ -259,9 +261,11 @@ int SiteAzwSetupRadar() {
 
   sprintf(sharedmemory,"IQBuff_Azw_%d_%d",rnum,cnum);
 
+  iqbufsize = 2 * (mppul) * sizeof(int32) * 1e6 * intsc * nbaud / mpinc; /* calculate size of IQ buffer (JTK) */
 
-  samples=(int16 *)
-    ShMemAlloc(sharedmemory,IQBUFSIZE,O_RDWR | O_CREAT,1,&shmemfd);
+  fprintf(stderr,"intc: %d, nbaud %d, mpinc %d, iq buffer size is %d\n",intsc, nbaud, mpinc, iqbufsize);
+  samples = (int16 *)ShMemAlloc(sharedmemory,iqbufsize,O_RDWR | O_CREAT,1,&shmemfd);
+  
   if(samples==NULL) { 
     fprintf(stderr,"IQBuffer %s is Null\n",sharedmemory);
     SiteAzwExit(-1);
@@ -778,6 +782,7 @@ usleep(usecs);
         fprintf(stderr,"AZW GET_DATA: recv back\n");
       }
       TCPIPMsgRecv(sock, rdata.back, sizeof(uint32)*dprm.samples);
+
       if (badtrdat.start_usec !=NULL) free(badtrdat.start_usec);
       if (badtrdat.duration_usec !=NULL) free(badtrdat.duration_usec);
       badtrdat.start_usec=NULL;
@@ -905,8 +910,8 @@ usleep(usecs);
       }
       fprintf(f_diagnostic_ascii,"\n");
       fprintf(f_diagnostic_ascii,"Sequence: Parameters: END\n");
+      fprintf(f_diagnostic_ascii,"Sequence: Invert %d\n",invert);
     }
-    fprintf(f_diagnostic_ascii,"Sequence: Invert %d\n",invert);
 
     if(dprm.status==0) {
       nsamp=(int)dprm.samples;
@@ -1035,7 +1040,7 @@ usleep(usecs);
       
       dest = (void *)(samples);  /* look iqoff bytes into samples area */
       dest+=iqoff;
-      if ((iqoff+dprm.samples*2*sizeof(uint32) )<IQBUFSIZE) {
+      if ((iqoff+dprm.samples*2*sizeof(uint32) )<iqbufsize) {
         memmove(dest,rdata.main,dprm.samples*sizeof(uint32));
         dest += dprm.samples*sizeof(uint32); /* skip ahead number of samples * 32 bit per sample to account for rdata.main*/
         memmove(dest,rdata.back,dprm.samples*sizeof(uint32));

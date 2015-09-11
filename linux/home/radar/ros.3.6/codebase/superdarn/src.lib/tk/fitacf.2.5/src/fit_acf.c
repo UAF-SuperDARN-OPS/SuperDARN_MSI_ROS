@@ -108,6 +108,9 @@ int fit_acf (struct complex *acf,int range,
     ptr->phi0_err = 0.0;
     ptr->sdev_l = 0.0;
     ptr->sdev_s = 0.0;
+/*
+    fprintf(stderr,"fit_acf: cabs(acf[0])  %f < noise_lev_in %f xflag: %d\n",(float)cabs(acf[0]),(float)noise_lev_in, (int) xflag);
+*/
     return 2;
   }
 
@@ -227,6 +230,9 @@ int fit_acf (struct complex *acf,int range,
     if (wt2 !=NULL) free(wt2);
     if (wp !=NULL) free(wp);
     if (bad_pwr !=NULL) free(bad_pwr);
+/*
+    fprintf(stderr,"fit_acf: (w[0] - P0n) %f < noise_lev %f xflag: %d\n",(float)(w[0] - P0n),(float)noise_lev, (int) xflag);
+*/
     return 2; 
   } 
     /* give up if left over pwr is too low */
@@ -317,6 +323,9 @@ int fit_acf (struct complex *acf,int range,
     if (wt2 !=NULL) free(wt2);
     if (wp !=NULL) free(wp);
     if (bad_pwr !=NULL) free(bad_pwr);
+/*
+    fprintf(stderr,"fit_acf: calc_phi_res(acf, badlag, phi_res, prm->mplgs) != 0 xflag: %d\n", (int) xflag);
+*/
     return 2;
   }
 
@@ -401,10 +410,15 @@ int fit_acf (struct complex *acf,int range,
      non-symmetric error bar, but the file format has no provision 
      for that. */
 
+/* FIXME:This should be considered for inclusion as a standard fit_acf library change 
+ * JDS: 20150710: Disabled err adjust logic request by Bristow
+ * this logic doesn't work at all with extended pulse sequence
+  
   if (fabs(omega_high - omega_low) >= 2*ptr->v_err) {
     ptr->v = omega_base;
     ptr->v_err = fabs(omega_high - omega_low);
     }
+*/
   }
   
 
@@ -446,6 +460,9 @@ int fit_acf (struct complex *acf,int range,
       if (wt2 !=NULL) free(wt2);
       if (wp !=NULL) free(wp);
       if (bad_pwr !=NULL) free(bad_pwr);
+/*
+      fprintf(stderr,"fit_acf: c_log < 0  xflag: %d\n", (int) xflag);
+*/
       return 2;
     }
 

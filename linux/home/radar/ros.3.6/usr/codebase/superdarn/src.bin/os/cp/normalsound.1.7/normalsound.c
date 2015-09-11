@@ -106,7 +106,7 @@ void write_sounding_record_new( char *progname, struct RadarParm *prm, struct Fi
 #define RT_TASK 2
 
 char *ststr=NULL;
-char *dfststr="tst";
+char *libstr=NULL;
 
 void *tmpbuf;
 size_t tmpsze;
@@ -120,15 +120,10 @@ struct OptionData opt;
 char *roshost=NULL;
 char *droshost={"127.0.0.1"};
 
-int baseport=44100;
 
-struct TCPIPMsgHost errlog={"127.0.0.1",44100,-1};
-
-struct TCPIPMsgHost shell={"127.0.0.1",44101,-1};
-
-int tnum=3;      
-struct TCPIPMsgHost task[3]={
-  /*  {"127.0.0.1",0,-1}, iqwrite */
+int tnum=4;      
+struct TCPIPMsgHost task[4]={
+  {"127.0.0.1",1,-1}, /* iqwrite */
   {"127.0.0.1",2,-1}, /* rawacfwrite */
   {"127.0.0.1",3,-1}, /* fitacfwrite */
   {"127.0.0.1",4,-1}  /* rtserver */
@@ -193,7 +188,7 @@ int main(int argc,char *argv[]) {
   /* the file contains one integer value per line */
   int freq_dwell=15; /* after so many minutes a new optimal frequency is evaluated */
   int sounder_freqs_total=8;
-  int sounder_freqs[ MAX_SND_FREQS]= { 10400,10900, 12000, 13000, 14500, 15000, 16000, 17000, 18000, 0, 0, 0 };
+  int sounder_freqs[ MAX_SND_FREQS]= { 10100, 10700, 11400, 12500,13700 , 14400, 15200, 17000, 18400, 0, 0, 0 };
   time_t last_freq_search, t_now;
   int fw=0; /* frequency weighting flag used in selecting the optimal freq */
   int sounder_beams[]={0,2,4,6,8,10,12,14};
@@ -201,8 +196,8 @@ int main(int argc,char *argv[]) {
   int sounder_beams_total=8, odd_beams=0;
   int sounder_freq;
   int sounder_beam_loop=1;
-  int normal_intt=5;
-  int fast_intt=2;
+  int normal_intt=6;
+  int fast_intt=3;
   int sounder_intt=2;
   int do_new_freq_search=0;
   float sounder_time, time_needed=1.25;
@@ -273,6 +268,7 @@ int main(int argc,char *argv[]) {
 
 
   OptionAdd(&opt,"stid",'t',&ststr); 
+  OptionAdd(&opt,"lib",'t',&libstr); 
  
   OptionAdd(&opt,"fast",'x',&fast);
 
@@ -282,35 +278,35 @@ int main(int argc,char *argv[]) {
    
   arg=OptionProcess(1,argc,argv,&opt,NULL);  
  
-  if (ststr==NULL) ststr=dfststr;
+  if (ststr==NULL) ststr = getenv("STSTR");
+  if (libstr==NULL) libstr = getenv("LIBSTR");
+  if (libstr==NULL) libstr=ststr;
 
   if (roshost==NULL) roshost=getenv("ROSHOST");
   if (roshost==NULL) roshost=droshost;
 
-
-  if ((errlog.sock=TCPIPMsgOpen(errlog.host,errlog.port))==-1) {    
-    fprintf(stderr,"Error connecting to error log.\n");
-  }
-
-  if ((shell.sock=TCPIPMsgOpen(shell.host,shell.port))==-1) {    
-    fprintf(stderr,"Error connecting to shell.\n");
-  }
-
-  for (n=0;n<tnum;n++) task[n].port+=baseport;
-
   OpsStart(ststr);
 
-  status=SiteBuild(ststr,NULL); /* second argument is version string */
+  status=SiteBuild(libstr,NULL); /* second argument is version string */
 
   if (status==-1) {
     fprintf(stderr,"Could not identify station.\n");
     exit(1);
   }
 
-  SiteStart(roshost);
+  SiteStart(roshost,ststr);
   arg=OptionProcess(1,argc,argv,&opt,NULL);  
 
   strncpy(combf,progid,80);   
+
+  for (n=0;n<tnum;n++) task[n].port+=baseport;
+  if ((errlog.sock=TCPIPMsgOpen(errlog.host,errlog.port))==-1) {    
+    fprintf(stderr,"Error connecting to error log.\n Host: %s Port: %d\n",errlog.host,errlog.port);
+  }
+
+  if ((shell.sock=TCPIPMsgOpen(shell.host,shell.port))==-1) {    
+    fprintf(stderr,"Error connecting to shell.\n");
+  }
  
   OpsSetupCommand(argc,argv);
   OpsSetupShell();

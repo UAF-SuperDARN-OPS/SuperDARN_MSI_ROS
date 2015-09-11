@@ -56,6 +56,7 @@
 char *sitefn[]={"Site%sStart",
 		"Site%sSetupRadar",
 		"Site%sStartScan",
+		"Site%sWait",
 		"Site%sStartIntt",
 		"Site%sFCLR",
 		"Site%sTimeSeq",
@@ -67,6 +68,7 @@ char *sitefn[]={"Site%sStart",
 void **siteptr[]={ (void **) &sitelib.start,
 		   (void **) &sitelib.setupradar,
 		   (void **) &sitelib.startscan,
+		   (void **) &sitelib.wait,
 		   (void **) &sitelib.startintt,
 		   (void **) &sitelib.fclr,
 		   (void **)  &sitelib.tmseq,
@@ -77,20 +79,20 @@ void **siteptr[]={ (void **) &sitelib.start,
 
 void *dlhandle=NULL;
 
-int SiteBuild(char *stid,char *vstr) {
+int SiteBuild(char *libstr,char *vstr) {
 
   char dlname[256];
   char symbol[256];
-  char st[6];
+  char st[10];
   
 
   char *error;
   int n=0;
 
-  if (vstr !=NULL) sprintf(dlname,"libsite.%s.%s.so",stid,vstr);
-  else  sprintf(dlname,"libsite.%s.1.so",stid);
-  
-  sprintf(st,"%c%s",toupper(stid[0]),stid+1);
+  if (vstr !=NULL) sprintf(dlname,"libsite.%s.%s.so",libstr,vstr);
+  else  sprintf(dlname,"libsite.%s.1.so",libstr);
+
+  sprintf(st,"%c%s",toupper(libstr[0]),libstr+1);
 
   dlhandle = dlopen(dlname,RTLD_NOW | RTLD_GLOBAL);
   if (!dlhandle) {
