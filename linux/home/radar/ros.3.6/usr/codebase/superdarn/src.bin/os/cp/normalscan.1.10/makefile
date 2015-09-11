@@ -20,7 +20,7 @@ LFLAGS=-rdynamic
 
 
 ifeq ($(SYSTEM),linux)
-  SLIB=-lm -lrt -lz -ldl -l argtable2
+  SLIB=-lm -lrt -lz -ldl
 else
   SLIB=-lm -lz -ldl
 endif
